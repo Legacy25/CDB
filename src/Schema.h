@@ -6,27 +6,29 @@
 #ifndef CDB_SCHEMA_H
 #define CDB_SCHEMA_H
 
+using namespace std;
+
 class Schema {
 private:
-    std::string tablename;
-    std::string datafile;
-    std::vector<std::string> attributes;
-    std::vector<Type> types;
-    std::vector<LeafValue *> tuples;
+    string tablename;
+    string datafile;
+    vector<string> attributes;
+    vector<Type> types;
+    vector<LeafValue *> tuples;
     bool materialized;
 
 public:
     Schema(
-            std::string tablename,
-            std::string datafile
+            string tablename,
+            string datafile
     );
 
-    void addAttribute(std::string, Type);
+    void addAttribute(string, Type);
     void materialize();
     void dump();
     bool isMaterialized();
 
-    friend std::ostream& operator<<(std::ostream &stream, const Schema &schema);
+    friend ostream& operator<<(ostream &stream, const Schema &schema);
 };
 
 

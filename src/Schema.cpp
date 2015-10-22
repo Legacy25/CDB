@@ -39,13 +39,17 @@ void Schema::materialize() {
             int i=0;
             while(getline(linestream, str, '|')) {
                 switch(types.at(i)) {
-                    case FLOAT:
-                        tuple[i].doubleData = stod(str);
+                    case LONG:
+                        tuple[i] = (int64_t) stol(str);
+                        break;
+                    case DOUBLE:
+                        tuple[i] = (int64_t) stod(str);
                         break;
                     case STRING:
+                    case DATE:
                         int buf_size = str.size()+1;
-                        tuple[i].stringData = new char[buf_size];
-                        memcpy(tuple[i].stringData, str.c_str(), buf_size);
+                        tuple[i] = (int64_t) new char[buf_size];
+                        memcpy((char *)tuple[i], str.c_str(), buf_size);
                         break;
                 }
                 i++;
@@ -76,11 +80,15 @@ void Schema::dump() {
         LeafValue *tuple = it.operator*();
         for(int i=0; i<n; i++) {
             switch(types[i]) {
-                case FLOAT:
-                    cout << tuple[i].doubleData << "|";
+                case LONG:
+                    cout << (long) tuple[i] << "|";
+                    break;
+                case DOUBLE:
+                    cout << (double) tuple[i] << "|";
                     break;
                 case STRING:
-                    cout << tuple[i].stringData << "|";
+                case DATE:
+                    cout << (char *) tuple[i] << "|";
                     break;
             }
         }
@@ -101,11 +109,17 @@ namespace util {
         while(a != attr.end() && t != types.end())
         {
             switch(t.operator*()) {
-                case FLOAT:
-                    tStr = "FLOAT";
+                case LONG:
+                    tStr = "LONG";
+                    break;
+                case DOUBLE:
+                    tStr = "DOUBLE";
                     break;
                 case STRING:
                     tStr = "STRING";
+                    break;
+                case DATE:
+                    tStr = "DATE";
                     break;
             }
             line.append(a.operator*()).append(" ");

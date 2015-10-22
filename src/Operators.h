@@ -1,33 +1,15 @@
+#include <stdint.h>
+
 #ifndef CDB_OPERATOR_H
 #define CDB_OPERATOR_H
 
-
-typedef union {
-    double doubleData;
-    char* stringData;
-} LeafValue;
-
 typedef enum {
-    FLOAT = 1,
-    STRING = 2,
+    LONG = 1,
+    DOUBLE = 2,
+    STRING = 3,
+    DATE = 4
 } Type;
 
-
-
-class Operator {
-public:
-    virtual LeafValue* getNext() = 0;
-    virtual void reset() = 0;
-};
-
-//class ScanOperator : public Operator {
-//private:
-//
-//public:
-//    ScanOperator();
-//    ~ScanOperator();
-//    virtual LeafValue* getNext();
-//    virtual void reset();
-//};
+typedef int64_t LeafValue;
 
 #endif //CDB_OPERATOR_H
