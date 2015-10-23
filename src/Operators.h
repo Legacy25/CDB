@@ -8,7 +8,7 @@ typedef enum {
     DOUBLE = 2,
     STRING = 3,
     DATE = 4
-} Type;
+} DataType;
 
 typedef int64_t LeafValue;
 

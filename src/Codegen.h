@@ -5,8 +5,25 @@
 #ifndef CDB_CODEGEN_H
 #define CDB_CODEGEN_H
 
-class Codegen {
+#define LL_FILE "build/queryexecutor.ll"
 
+using namespace llvm;
+using namespace std;
+
+
+
+class Codegen {
+private:
+    Module *module;
+    IRBuilder<> *builder;
+
+public:
+    Codegen(string);
+    ~Codegen();
+
+    IRBuilder<>* getBuilder() const;
+    void print(const char*);
+    void dump() const;
 };
 
 #endif //CDB_CODEGEN_H

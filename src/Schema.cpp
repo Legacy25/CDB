@@ -14,7 +14,7 @@ Schema::Schema(string tablename, string datafile)
     materialized = false;
 }
 
-void Schema::addAttribute(string attr, Type t) {
+void Schema::addAttribute(string attr, DataType t) {
     attributes.push_back(attr);
     types.push_back(t);
 }
@@ -30,7 +30,7 @@ void Schema::materialize() {
 
         while(getline(infile, line)) {
 
-            int n = attributes.size();
+            unsigned long n = attributes.size();
             LeafValue *tuple = new LeafValue[n];
             stringstream linestream;
             linestream.str(line);
@@ -47,7 +47,7 @@ void Schema::materialize() {
                         break;
                     case STRING:
                     case DATE:
-                        int buf_size = str.size()+1;
+                        unsigned long buf_size = str.size()+1;
                         tuple[i] = (int64_t) new char[buf_size];
                         memcpy((char *)tuple[i], str.c_str(), buf_size);
                         break;
@@ -65,18 +65,18 @@ void Schema::materialize() {
     materialized = true;
 }
 
-bool Schema::isMaterialized() {
+bool Schema::isMaterialized() const {
     return materialized;
 }
 
-void Schema::dump() {
+void Schema::dump() const {
     if(!materialized) {
         cout << "Cannot dump, not materialized!";
         return;
     }
 
     int n = attributes.size();
-    for(vector<LeafValue *>::iterator it = tuples.begin(); it != tuples.end(); it++) {
+    for(auto it = tuples.begin(); it != tuples.end(); it++) {
         LeafValue *tuple = it.operator*();
         for(int i=0; i<n; i++) {
             switch(types[i]) {
@@ -99,7 +99,7 @@ void Schema::dump() {
 namespace util {
     string attrsVecsToCommaSepString(
             const vector<string>& attr,
-            const vector<Type>& types
+            const vector<DataType>& types
     ) {
 
         string line = "", tStr = "";

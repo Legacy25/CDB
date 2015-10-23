@@ -13,7 +13,7 @@ private:
     string tablename;
     string datafile;
     vector<string> attributes;
-    vector<Type> types;
+    vector<DataType> types;
     vector<LeafValue *> tuples;
     bool materialized;
 
@@ -23,10 +23,10 @@ public:
             string datafile
     );
 
-    void addAttribute(string, Type);
+    void addAttribute(string, DataType);
     void materialize();
-    void dump();
-    bool isMaterialized();
+    void dump() const;
+    bool isMaterialized() const;
 
     friend ostream& operator<<(ostream &stream, const Schema &schema);
 };
