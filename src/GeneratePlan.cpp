@@ -5,6 +5,11 @@
 
 using namespace std;
 
+/**
+ * This is the starting point of the llvm generating phase.
+ * This will take as input, the query plan from Java land,
+ * and output the llvm code.
+ */
 int main()
 {
     // This file will take as input the query plan dumped file

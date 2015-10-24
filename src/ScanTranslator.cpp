@@ -9,5 +9,6 @@ extern Type *int64PtrType;
 
 void scanProduce(const Codegen* codegen, const Context* context) {
     IRBuilder<> *builder = codegen->getBuilder();
-
+    // Use builder or api calls from codegen to generate the rest
+    // of the llvm code
 }
