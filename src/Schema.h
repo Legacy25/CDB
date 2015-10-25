@@ -27,6 +27,7 @@ public:
     void materialize();
     void dump() const;
     bool isMaterialized() const;
+    TupPtr getTupPtr() const;
 
     friend ostream& operator<<(ostream &stream, const Schema &schema);
 };

@@ -137,3 +137,13 @@ ostream& operator<<(ostream &stream, const Schema &schema) {
     return stream << schema.tablename << " : " << schema.datafile << endl
            << attrs;
 }
+
+TupPtr Schema::getTupPtr() const {
+    TupPtr tp;
+
+    tp.ptr = (int64_t) &tuples[0];
+    tp.att_count = types.size();
+    tp.tup_count = tuples.size();
+
+    return tp;
+}

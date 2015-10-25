@@ -1,4 +1,5 @@
 #include <iostream>
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
 
 #include "Schema.h"
 #include "Codegen.h"
@@ -17,22 +18,33 @@ int main()
     // Parse query plan representation
 
     // Create instances of Schema
+    Schema nation("nation", "data/nation.tbl");
+    nation.addAttribute("nationkey", LONG);
+    nation.addAttribute("name", STRING);
+    nation.addAttribute("regionkey", LONG);
+    nation.addAttribute("comment", STRING);
 
-    // Create API calls in Codegen to generate loops, conditionals
-    // etc.
+    nation.materialize();
 
     // Create instance of Codegen
     Codegen codegen("LLVM");
+
+    // Create API calls in Codegen to generate loops, conditionals
+    // etc.
+    // This is just to demonstrate a rough API call
+    codegen.print(nation.getTupPtr());
 
     // Call Codegen's methods to generate LLVM from various translator
     // functions like scanProduce(codegen, context), selectionProduce(args),
     // selectionConsume, etc. Calls these methods according to the parsed
     // query plan representation
 
-    // This is just to demonstrate a rough API call
-    codegen.print("Hello World!");
-
     // Finally, at the end call codegen.dump(), which will dump the module
     // to build/queryexecutor.ll
-    codegen.dump();
+    ExecutionEngine *engine = codegen.dump();
+
+    cout << "DUMPED! Now executing!...\n\n";
+
+    int (*FP)(int, int*) = (int (*)(int, int*))(engine->getPointerToNamedFunction("llvmStart", true));
+    FP(0, NULL);
 }
