@@ -1,7 +1,7 @@
 #include <vector>
 #include <string>
 
-#include "Operators.h"
+#include "Translator.h"
 
 #ifndef CDB_SCHEMA_H
 #define CDB_SCHEMA_H
@@ -28,6 +28,7 @@ public:
     void dump() const;
     bool isMaterialized() const;
     TupPtr getTupPtr() const;
+    const vector<DataType>* getTypes() const;
 
     friend ostream& operator<<(ostream &stream, const Schema &schema);
 };

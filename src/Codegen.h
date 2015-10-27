@@ -1,32 +1,25 @@
+
+#ifndef CDB_CODEGEN_H
+#define CDB_CODEGEN_H
+
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 
-#include "Operators.h"
-
-#ifndef CDB_CODEGEN_H
-#define CDB_CODEGEN_H
-
-#define LL_FILE "build/queryexecutor.ll"
+#include "DataTypes.h"
+#include "Translator.h"
 
 using namespace llvm;
 using namespace std;
 
 
+namespace codegen {
+    void initialize(string);
+    ExecutionEngine* compile();
 
-class Codegen {
-private:
-    Module *module;
-    IRBuilder<> *builder;
-
-public:
-    Codegen(string);
-    ~Codegen();
-
-    IRBuilder<>* getBuilder() const;
-    void print(const TupPtr tp);
-    ExecutionEngine * dump() const;
-};
+    void scanConsume(const TupPtr, const Translator*);
+    void printConsume(int*);
+}
 
 #endif //CDB_CODEGEN_H

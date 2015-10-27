@@ -1,7 +1,9 @@
-#include <stdint.h>
+#ifndef PROJECT_DATATYPES_H
+#define PROJECT_DATATYPES_H
 
-#ifndef CDB_OPERATOR_H
-#define CDB_OPERATOR_H
+#include <cstdint>
+
+using namespace std;
 
 typedef enum {
     LONG = 1,
@@ -18,4 +20,4 @@ typedef struct tuplePointer {
     size_t tup_count;
 } TupPtr;
 
-#endif //CDB_OPERATOR_H
+#endif //PROJECT_DATATYPES_H

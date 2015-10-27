@@ -147,3 +147,7 @@ TupPtr Schema::getTupPtr() const {
 
     return tp;
 }
+
+const vector<DataType>* Schema::getTypes() const {
+    return &types;
+}

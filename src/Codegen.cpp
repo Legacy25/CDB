@@ -14,36 +14,55 @@
 using namespace llvm;
 using namespace std;
 
+/* Codegen Essentials */
+static LLVMContext &context = getGlobalContext();
+static Module *module;
+static IRBuilder<> *builder;
+
+/* Declaration of llvm functions */
 static Function *mainFunction;
-LLVMContext &context = getGlobalContext();
-
-Type *int32Type = Type::getInt32Ty(context);
-Type *int32PtrType = Type::getInt32PtrTy(context);
-Type *int64Type = Type::getInt64Ty(context);
-Type *int64PtrType = Type::getInt64PtrTy(context);
-
-
-Value *longFmt;
-Value *doubleFmt;
-Value *stringFmt;
-Value *dateFmt;
-Value *newLine;
-
-static int nameCtr = 0;
-
 static Constant *printfFunc;
 
-Codegen::Codegen(string ModuleName) {
+/* Useful codegen variables */
+static Type *int32Type = Type::getInt32Ty(context);
+static Type *int32PtrType = Type::getInt32PtrTy(context);
+static Type *int64Type = Type::getInt64Ty(context);
+static Type *int64PtrType = Type::getInt64PtrTy(context);
+
+static Value *longFmt;
+static Value *doubleFmt;
+static Value *stringFmt;
+static Value *dateFmt;
+static Value *newLine;
+
+static Value *dtLong = ConstantInt::get(int32Type, LONG);
+static Value *dtDouble = ConstantInt::get(int32Type, DOUBLE);
+static Value *dtString = ConstantInt::get(int32Type, STRING);
+static Value *dtDate = ConstantInt::get(int32Type, DATE);
+
+
+/* Counters and useful globals for codegen */
+static uint32_t nameCtr = 0;
+static bool initialized = false;
+static bool compiled = false;
+
+static Value* tuplePtr;
+static Value* tc;
+static Value* ac;
+
+/* Initialize codegen, sets everything up */
+void codegen::initialize(string ModuleName) {
+    if(initialized) {
+        return;
+    }
 
     InitializeNativeTarget();
 
     InitializeNativeTargetAsmPrinter();
     InitializeNativeTargetAsmParser();
 
-    // Useful globals to help generate IR
     module = new Module(StringRef(ModuleName), context);
     builder = new IRBuilder<>(context);
-
 
     // Declare C standard library printf so that we can call it
     vector<Type *> printfArgsTypes({Type::getInt8PtrTy(context)});
@@ -71,66 +90,64 @@ Codegen::Codegen(string ModuleName) {
     stringFmt = builder->CreateGlobalStringPtr("%s|");
     dateFmt = builder->CreateGlobalStringPtr("%s|");
     newLine = builder->CreateGlobalStringPtr("\n");
+
+    initialized = true;
 }
 
-Codegen::~Codegen() {
-    delete module;
-    delete builder;
-}
+ExecutionEngine* codegen::compile() {
+    if(compiled) {
+        cerr << "Module has already been compiled, cannot compile again!"
+            << "\nExiting..." << endl;
+        exit(-1);
+    }
 
-IRBuilder<>* Codegen::getBuilder() const {
-    return builder;
-}
-
-ExecutionEngine* Codegen::dump() const {
     builder->CreateRet(ConstantInt::get(int32Type, 0));
-    module->dump();
-    string error;
-    raw_fd_ostream out(LL_FILE, error, sys::fs::OpenFlags::F_RW);
-    WriteBitcodeToFile(module, out);
 
+    // This is for debugging
+    module->dump();
+
+    string error;
     ExecutionEngine *executionEngine = EngineBuilder(module).
             setErrorStr(&error).
             setUseMCJIT(true).
             create();
 
     executionEngine->finalizeObject();
+    compiled = true;
     return executionEngine;
 }
 
-void Codegen::print(const TupPtr tp) {
+
+
+void codegen::scanConsume(const TupPtr tp, const Translator *parent) {
     Type *ptrToPtr = PointerType::get(int64PtrType, 0);
     Value *ptr = builder->CreateIntToPtr(ConstantInt::get(int64Type, tp.ptr), ptrToPtr);
-    Value *ac = ConstantInt::get(int32Type, tp.att_count);
-    Value *tc = ConstantInt::get(int32Type, tp.tup_count);
+    ac = ConstantInt::get(int32Type, tp.att_count);
+    tc = ConstantInt::get(int32Type, tp.tup_count);
 
     Value *loopVar =
             builder->CreateAlloca(
                     int32Type,
                     ConstantInt::get(int32Type, 1),
-                    "loopVar"+to_string(nameCtr++)
+                    "loopVar" + to_string(nameCtr++)
             );
     builder->CreateStore(ConstantInt::get(int32Type, 0), loopVar);
 
-    BasicBlock *loopBody = BasicBlock::Create(context, "loopBody"+to_string(nameCtr++), mainFunction);
+    BasicBlock *loopBody = BasicBlock::Create(context, "loopBody" + to_string(nameCtr++), mainFunction);
     builder->CreateBr(loopBody);
     builder->SetInsertPoint(loopBody);
 
-    // Print
     Value *i = builder->CreateLoad(loopVar);
 
-    Value* indices[1];
+    Value *indices[1];
     indices[0] = i;
     ArrayRef<Value *> indicesRef(indices);
 
-    Value *tuple = builder->CreateLoad(builder->CreateInBoundsGEP(ptr, indicesRef));
+    tuplePtr = builder->CreateLoad(builder->CreateInBoundsGEP(ptr, indicesRef));
 
-    Value* indices1[1];
-    indices1[0] = ConstantInt::get(int64Type, 1);
-    ArrayRef<Value *> indicesRef1(indices1);
-    Value *data = builder->CreateLoad(builder->CreateInBoundsGEP(tuple, indicesRef1));
-    vector<Value *> args({stringFmt, data});
-    builder->CreateCall(printfFunc, ArrayRef<Value*>(args));
+    if (parent != NULL) {
+        parent->consume();
+    }
 
     Value *inc = builder->CreateAdd(i, ConstantInt::get(int32Type, 1));
     builder->CreateStore(inc, loopVar);
@@ -139,4 +156,75 @@ void Codegen::print(const TupPtr tp) {
     builder->CreateCondBr(cmp, loopBody, afterLoop);
 
     builder->SetInsertPoint(afterLoop);
+}
+
+void codegen::printConsume(int *types) {
+    Value *loopVar =
+            builder->CreateAlloca(
+                    int32Type,
+                    ConstantInt::get(int32Type, 1),
+                    "loopVar" + to_string(nameCtr++)
+            );
+
+    builder->CreateStore(ConstantInt::get(int32Type, 0), loopVar);
+
+    BasicBlock *loopBody = BasicBlock::Create(context, "loopBody" + to_string(nameCtr++), mainFunction);
+    builder->CreateBr(loopBody);
+    builder->SetInsertPoint(loopBody);
+    Value *i = builder->CreateLoad(loopVar);
+
+
+    Value *typesPtr = builder->CreateIntToPtr(ConstantInt::get(int64Type, (uint64_t) types), int32PtrType);
+
+    Value *indices[1];
+    indices[0] = i;
+    ArrayRef<Value *> indicesRef(indices);
+
+    Value *type = builder->CreateLoad(
+            builder->CreateInBoundsGEP(typesPtr, indicesRef)
+    );
+
+    Value *data = builder->CreateLoad(
+            builder->CreateInBoundsGEP(tuplePtr, indicesRef)
+    );
+
+    BasicBlock *afterSwitch = BasicBlock::Create(context, "afterswitch"+to_string(nameCtr++), mainFunction);
+    BasicBlock *longCase = BasicBlock::Create(context, "longcase"+to_string(nameCtr++), mainFunction);
+    BasicBlock *doubleCase = BasicBlock::Create(context, "doublecase"+to_string(nameCtr++), mainFunction);
+    BasicBlock *stringCase = BasicBlock::Create(context, "stringcase"+to_string(nameCtr++), mainFunction);
+    BasicBlock *dateCase = BasicBlock::Create(context, "datecase"+to_string(nameCtr++), mainFunction);
+
+    SwitchInst *switchInst = builder->CreateSwitch(type, afterSwitch, 4);
+    switchInst->addCase((ConstantInt *)ConstantInt::get(int32Type, LONG), longCase);
+    switchInst->addCase((ConstantInt *)ConstantInt::get(int32Type, DOUBLE), doubleCase);
+    switchInst->addCase((ConstantInt *)ConstantInt::get(int32Type, STRING), stringCase);
+    switchInst->addCase((ConstantInt *)ConstantInt::get(int32Type, DATE), dateCase);
+
+
+    builder->SetInsertPoint(longCase);
+    builder->CreateCall(printfFunc, vector<Value*>({longFmt, data}));
+    builder->CreateBr(afterSwitch);
+
+    builder->SetInsertPoint(doubleCase);
+    builder->CreateCall(printfFunc, vector<Value*>({doubleFmt, data}));
+    builder->CreateBr(afterSwitch);
+
+    builder->SetInsertPoint(stringCase);
+    builder->CreateCall(printfFunc, vector<Value*>({stringFmt, data}));
+    builder->CreateBr(afterSwitch);
+
+    builder->SetInsertPoint(dateCase);
+    builder->CreateCall(printfFunc, vector<Value*>({dateFmt, data}));
+    builder->CreateBr(afterSwitch);
+
+
+    builder->SetInsertPoint(afterSwitch);
+    Value *inc = builder->CreateAdd(i, ConstantInt::get(int32Type, 1));
+    builder->CreateStore(inc, loopVar);
+    BasicBlock *afterLoop = BasicBlock::Create(context, "afterloop"+to_string(nameCtr++), mainFunction);
+    Value *cmp = builder->CreateICmpSLT(inc, ac);
+    builder->CreateCondBr(cmp, loopBody, afterLoop);
+
+    builder->SetInsertPoint(afterLoop);
+    builder->CreateCall(printfFunc, vector<Value*>({newLine}));
 }
